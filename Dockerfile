@@ -1,7 +1,7 @@
 #!/usr/bin/env docker-builder
 # IMAGE: docker.io/own3dh2so4/xiaomi-mi-temperature:0.0.1
 
-FROM python:3.9.1-alpine
+FROM python:3.9.1-alpine3.12
 
 RUN apk add build-base bluez glib-dev && \
     mkdir -p /var/log/cron && \
