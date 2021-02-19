@@ -7,3 +7,7 @@ class AbstractBackend(ABC):
     @abstractmethod
     def send_data(self, measurement: Measurement) -> None:
         ...
+
+    @abstractmethod
+    def send_error(self, device_name: str) -> None:
+        ...

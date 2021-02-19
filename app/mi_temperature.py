@@ -2,6 +2,7 @@ from queue import SimpleQueue
 from typing import List, Optional
 
 from bluepy import btle  # type: ignore
+from bluepy.btle import BTLEDisconnectError
 
 from backend.model.measurement import Measurement
 from delegate import Delegate
@@ -15,15 +16,21 @@ class MiTemperature:
         self.delegate = Delegate(name)
         self.connection: Optional[btle.Peripheral] = None
 
-    def connect(self) -> None:
-        if self.connection is None:
-            p = btle.Peripheral(self.bluetooth_mac)
-            val = b"\x01\x00"
-            # enable notifications of Temperature, Humidity and Battery voltage
-            p.writeCharacteristic(0x0038, val, True)
-            p.writeCharacteristic(0x0046, b"\xf4\x01\x00", True)
-            p.withDelegate(self.delegate)
-            self.connection = p
+    def connect(self, conn_retries: int = 1) -> bool:
+        retries = 0
+        while self.connection is None and retries < conn_retries:
+            conn_retries += 1
+            try:
+                p = btle.Peripheral(self.bluetooth_mac)
+                val = b"\x01\x00"
+                # enable notifications of Temperature, Humidity and Battery voltage
+                p.writeCharacteristic(0x0038, val, True)
+                p.writeCharacteristic(0x0046, b"\xf4\x01\x00", True)
+                p.withDelegate(self.delegate)
+                self.connection = p
+            except BTLEDisconnectError:
+                print(f"Error connecting with device {self.name}({self.bluetooth_mac})")
+        return self.connection is not None
 
     def disconnect(self) -> None:
         if self.connection:

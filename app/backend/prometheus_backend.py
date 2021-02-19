@@ -1,4 +1,4 @@
-from prometheus_client import CollectorRegistry, Gauge, push_to_gateway  # type: ignore
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway, Counter  # type: ignore
 
 from .abstract_backend import AbstractBackend
 from .model.measurement import Measurement
@@ -26,6 +26,12 @@ class PrometheusBackend(AbstractBackend):
             registry=self.registry,
             labelnames=("sensor",),
         )
+        self.error = Counter(
+            "xiaomi_sensor_fetch_error",
+            "Fetch error counter counter",
+            registry=self.registry,
+            labelnames=("sensor",),
+        )
 
     def send_data(self, measurement: Measurement) -> None:
         self.t.labels(measurement.name).set(measurement.temperature)
@@ -35,5 +41,14 @@ class PrometheusBackend(AbstractBackend):
             self.prometheus_url,
             job="home_temperature",
             grouping_key={"sensor": measurement.name},
+            registry=self.registry,
+        )
+
+    def send_error(self, device_name: str) -> None:
+        self.error.inc()
+        push_to_gateway(
+            self.prometheus_url,
+            job="home_temperature",
+            grouping_key={"sensor": device_name},
             registry=self.registry,
         )
